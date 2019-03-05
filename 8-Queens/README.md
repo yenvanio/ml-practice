@@ -4,19 +4,19 @@
 - Based on biology, survival of the fittest 
 - General Process
     - Initial Population
-        - 
     - Evaluation of Each Individual 
     - Selection
     - Reproduction
     - Mutation 
 - Generating Population
-    - Need to define variable characteristics and fixed characteristics
-    - Ex: If trying to crack a password
-        - Letters are variable
-        - Length is fixed
+    - Generate 8 Queens on the board, track the position in a column
+        - Because it's a given that all queens are in different columns
 - Fitness Function
-    - To evaluate the specimen you need a function
-    - Estimates the success of the specimen 
-    - Ex: If trying to crack a password
-        - `Fitness Function = (num of correct characters) / (num of characters in password)`
-- 
+    - To evaluate the population you need a function
+    - Estimates the success of the individual
+    - Check number of horizontal collisions and diagonal collisions
+        - Less collisions = higher fitness
+        - Total fitness = 28 (max number of collisions)
+            - Fitness Value = 28 - # of collisions
+- Selection
+    - Parent chromosomes are selected with a probability related to their fitness
