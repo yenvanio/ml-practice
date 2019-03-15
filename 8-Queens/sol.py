@@ -1,77 +1,99 @@
+#!/usr/bin/env python
+
 import random
-import sys
+import string
 
-# Selection Function
-def select(population, fitness, goal_fit):
-	current_amount = 0
-	fitness_total = []
-	for i in range(len(population)):
-		current_amount += fitness(population[i], goal_fit)
-		fitness_total.append(current_amount)
-	prob = random.uniform(0, fitness_total[-1])
-	for i in range(len(population)):
-		if fitness_total[i] > prob:
-			return population[i]
+def random_individual(size):
+    return [ random.randint(1, 8) for _ in range(8) ]
 
-# Mutation Function
-def mutation(child):
-	return switch(1, child)
-
-# Reproduction Function
-def reproduce(x):
-	return switch(2, x)
-
-
-def compute_goal_fit(n):
-	goal_fit = 0
-	for i in range(n):
-		goal_fit += i
-	return goal_fit
-
-def switch(n, target):
-	for i in range(n):
-		j = random.randint(0, len(target) - 1)
-		k = random.randint(0, len(target) - 1)
-		target[j], target[k] = target[k], target[j]
-	return target
-
-# Genetic Algorithm
-def solve(population, fitness):
-	nmax = 100000
-	n = nmax
-	goal_fit = compute_goal_fit(len(random.choice(population)))
-	while n > 0: 
-		new_population = []
-		for i in range(len(population)):
-			x = select(population, fitness, goal_fit)
-			child = reproduce(x)
-			if random.uniform(0,1) < 1.0:
-				child = mutation(child)
-			if fitness(child, goal_fit) >= goal_fit:
-				print child," found in ", nmax - n, " generations.\n"
-				return child	
-			new_population.append(child)
-		population = new_population	
-		n -= 1
-	print "Solution not found in ", nmax, " generations, try again.\n"
-	return None
-
+maxFitness = 28
 
 # Fitness Function
-def fitness(individual, goal_fit):
-	fitness_value = goal_fit
-	for i in range(len(individual)):
-		j = 1
-		while j < len(individual)-i:
-			if (individual[i] == individual[i+j]+j) or (individual[i] == individual[i+j]-j):
-				fitness_value -= 1
-			j += 1
-	return fitness_value
+def fitness(individual):
+    horizontal_collisions = sum([individual.count(queen)-1 for queen in individual])/2
+    diagonal_collisions = 0
+
+    n = len(individual)
+    left_diagonal = [0] * 2*n
+    right_diagonal = [0] * 2*n
+    for i in range(n):
+        left_diagonal[i + individual[i] - 1] += 1
+        right_diagonal[len(individual) - i + individual[i] - 2] += 1
+
+    diagonal_collisions = 0
+    for i in range(2*n-1):
+        counter = 0
+        if left_diagonal[i] > 1:
+            counter += left_diagonal[i]-1
+        if right_diagonal[i] > 1:
+            counter += right_diagonal[i]-1
+        diagonal_collisions += counter / (n-abs(i-n+1))
+    
+    return int(maxFitness - (horizontal_collisions + diagonal_collisions))
+
+# Weighted Probability Function
+def probability(individual, fitness):
+    return fitness(individual) / maxFitness
+
+# Selection Function
+def random_pick(population, probabilities):
+    populationWithProbabilty = zip(population, probabilities)
+    total = sum(w for c, w in populationWithProbabilty)
+    r = random.uniform(0, total)
+    upto = 0
+    for c, w in zip(population, probabilities):
+        if upto + w >= r:
+            return c
+        upto += w
+    assert False, "Error"
+
+# Produce Offspring for new Population
+def reproduce(x, y):
+    n = len(x)
+    c = random.randint(0, n - 1)
+    return x[0:c] + y[c:n]
+
+# Mutation Function
+def mutate(x):
+    n = len(x)
+    c = random.randint(0, n - 1)
+    m = random.randint(1, n)
+    x[c] = m
+    return x
+
+# Genetic Algorithm
+def genetic_queen(population, fitness):
+    mutation_probability = 0.03
+    new_population = []
+    probabilities = [probability(n, fitness) for n in population]
+    for i in range(len(population)):
+        x = random_pick(population, probabilities)
+        y = random_pick(population, probabilities)
+        child = reproduce(x, y)
+        if random.random() < mutation_probability:
+            child = mutate(child)
+        print_individual(child)
+        new_population.append(child)
+        if fitness(child) == 28: break
+    return new_population
+
+# Output to Terminal
+def print_individual(x):
+    print("{},  fitness = {}, probability = {:.6f}"
+        .format(str(x), fitness(x), probability(x, fitness)))
 
 # Main Function
-n = 8
-population = []
-base = range(n)
-for i in range(100):
-	population.append(switch(5, base))
-solve(population, fitness)
+if __name__ == "__main__":
+    population = [random_individual(8) for _ in range(100)]
+    generation = 1
+
+    while not 28 in [fitness(x) for x in population]:
+        print("=== Generation {} ===".format(generation))
+        population = genetic_queen(population, fitness)
+        print("Maximum fitness = {}".format(max([fitness(n) for n in population])))
+        generation += 1
+
+    print("Solved in Generation {}!".format(generation-1))
+    for x in population:
+        if fitness(x) == 28:
+            print_individual(x)
