@@ -14,6 +14,6 @@
 3. Selection
     - Parent chromosomes are selected with a probability related to their fitness
         - Weighted Random Probability
-4. Crossover
 5. Mutation
+    - Probability = 0.03
  
